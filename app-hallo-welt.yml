@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hallo-welt
+  namespace: websites
+  annotations:
+    author: Lukas Schneider
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: hallo-welt
+  template:
+    metadata:
+      labels:
+        app: hallo-welt
+      annotations:
+        author: Lukas Schneider
+    spec:
+      containers:
+        - name: hallo-welt
+          image: goloroden/hello-world:latest
+          env:
+            - name: MESSAGE
+              value: "Herzlich Willkommen!"
+          ports:
+            - name: http
+              containerPort: 3000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hallo-welt
+  namespace: websites
+  annotations:
+    author: Lukas Schneider
+spec:
+  selector:
+    app: hallo-welt
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: http-ingress
+  namespace: websites
+  annotations:
+    author: Lukas Schneider
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - hallo-welt.sclu.eu
+      secretName: hallo-welt-tlscert
+  rules:
+    - host: hallo-welt.sclu.eu
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hallo-welt
+                port:
+                  name: http
+
+
+
