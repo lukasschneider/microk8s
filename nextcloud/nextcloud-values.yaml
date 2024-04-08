@@ -1,0 +1,67 @@
+# Set Ingress to default ingress controller
+ingress:
+  enabled: true
+  hosts:
+    - host: cloud.sclu.eu
+      paths:
+        - /
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  tls:
+    - secretName: nextcloud-tls
+      hosts:
+        - cloud.sclu.eu
+
+# Nextcloud configuration
+nextcloud:
+  host: cloud.sclu.eu
+  datadir: /var/www/html/data
+  existingSecret:
+    enabled: true
+    secretName: nextcloud-secrets
+    usernameKey: NEXTCLOUD_ADMIN_USER
+    passwordKey: NEXTCLOUD_ADMIN_PASSWORD
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+internalDatabase:
+  enabled: false
+
+## External database configuration
+externalDatabase:
+  enabled: true
+  type: postgresql
+  host: nextcloud-postgresql:5432
+  username: nextcloud
+  database: nextcloud
+  existingClaim:
+    enabled: true
+    secretName: nextcloud-secrets
+    passwordKey: POSTGRESQL_USER_PASSWORDS
+
+# Set resources and limits for Nextcloud
+ressources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Set Persistence to true to enable persistence
+persistence:
+  enabled: true
+  existingClaim: nextcloud-pvc
+  accessMode: ReadWriteOnce
+  size: 8Gi
+  nextcloudData:
+    enabled: true
+    existingClaim: nextcloud-data
+    accessMode: ReadWriteOnce
+    size: 50Gi
+
+metrics:
+  enabled: true
